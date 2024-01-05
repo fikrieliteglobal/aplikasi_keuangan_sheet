@@ -1,3 +1,6 @@
+const spreadsheetId = '1-uyaqY1ZO24zezG_exzZL-dzizsMy93VsheasBWxc7g'
+let berhasilSinkron = 0;
+
 function formatRupiah(angka, prefix) {
   var number_string = angka.replace(/[^,\d]/g, "").toString(),
     split = number_string.split(","),
@@ -15,7 +18,7 @@ function formatRupiah(angka, prefix) {
 }
 
 function tempelDashboard() {
-  $.get("dashboard/coba.html", function (data) {
+  $.get("dashboard/index.html", function (data) {
     $(".content").html(data);
   });
   $.get("dashboard/modals_input_ik.html", function (data) {
@@ -24,42 +27,43 @@ function tempelDashboard() {
 }
 
 function ambilDataKategori() {
-  var url = `https://sheetsu.com/apis/v1.0bu/ba8eaa02fbd7/sheets/kategori/search`
+  return gapi.client.sheets.spreadsheets.values.get({
+    "spreadsheetId": "1-uyaqY1ZO24zezG_exzZL-dzizsMy93VsheasBWxc7g",
+    "range": "A:C",
+    "dateTimeRenderOption": "FORMATTED_STRING",
+    "majorDimension": "ROWS",
+    "valueRenderOption": "FORMATTED_VALUE"
+  })
+    .then(function (response) {
+      // Handle the results here (response.result has the parsed body).
+      console.log("Response", response);
+    },function (err) { console.error("Execute error", err); });
+}
 
-  $.ajax({
-    url: url,
-    // data: params,
-    success: function(data) {
-        var pemasukan = []
-        var pengeluaran = []
-        for (let i = 0; i < data.length; i++) {
-            if (data[i].jenis_kategori == 'pemasukan') {
-                var tr = `
-                <tr>
-                    <td>${data[i].nama_kategori}</td>
-                    <td>Edit</td>
-                </tr>
-                `
-                pemasukan.push(tr)
-            } else {
-                var tr = `
-                <tr>
-                    <td>${data[i].nama_kategori}</td>
-                    <td>Edit</td>
-                </tr>
-                `
-                pengeluaran.push(tr)
-            }
-        }
-        var hasil_pemasukan = pemasukan.join('')
-        var hasil_pengeluaran = pengeluaran.join('')
-        $('#tampung_pemasukan').html(hasil_pemasukan)
-        $('#tampung_pengeluaran').html(hasil_pengeluaran)
-    },
+function sinkronisasi() {
+  gapi.load("client:auth2", function () {
+    gapi.auth2.init({ client_id: "597436093390-kr3dci12h6si58jolr13652ccbc0a94j.apps.googleusercontent.com" });
+    authenticate().then(loadClient)
+    // var hasil = authenticate().then(loadClient)
+    console.log(berhasilSinkron)
   });
+}
+
+function authenticate() {
+  return gapi.auth2.getAuthInstance()
+    .signIn({ scope: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets" })
+    .then(function () { console.log("Sign-in successful"); },
+      function (err) { console.error("Error signing in", err); });
+}
+
+function loadClient() {
+  gapi.client.setApiKey("AIzaSyA3d_uZEd-z2iOFbiH1-SKf6KLs0w42eCU");
+  return gapi.client.load("https://sheets.googleapis.com/$discovery/rest?version=v4")
+    .then(function () { console.log("GAPI client loaded for API"); berhasilSinkron = 1; },
+      function (err) { console.error("Error loading GAPI client for API", err); });
 }
 
 $(document).ready(function () {
   tempelDashboard();
-  ambilDataKategori();
+  sinkronisasi()
 });
